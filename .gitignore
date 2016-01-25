@@ -8,3 +8,5 @@ dist
 bin
 **/*.pyc
 **/*.pyo
+src/*.egg-info
+.installed.cfg

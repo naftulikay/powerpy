@@ -1,6 +1,8 @@
 #!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
+from setuptools import setup, find_packages
+
 setup(
     name = "powerpy",
     description = "A slideshow REST API in Python.",
@@ -13,7 +15,7 @@ setup(
     ],
     entry_points = {
         'console_scripts': [
-            'powerpy-web = powerpy.web.start_webserver'
+            'powerpy-web = powerpy.web:start_webserver'
         ],
     },
     zip_safe = True
