@@ -4,7 +4,7 @@ redis:
     ports:
         - 6379:6379
 rabbitmq:
-    image: rabbitmq
+    image: rabbitmq:3-management
     ports:
         - 5672:5672
         # admin port
