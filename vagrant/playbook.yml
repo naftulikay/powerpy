@@ -7,3 +7,7 @@
          yum: name=docker state=present
        - name: install docker-compose
          pip: name=docker-compose state=present
+       - name: install redis cli tools
+         yum: name=redis state=present
+       - name: stop and disable redis
+         service: name=redis state=stopped enabled=no

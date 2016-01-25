@@ -1,0 +1,11 @@
+---
+redis:
+    image: redis:alpine
+    ports:
+        - 6379:6379
+rabbitmq:
+    image: rabbitmq
+    ports:
+        - 5672:5672
+        # admin port
+        - 15672:15672
