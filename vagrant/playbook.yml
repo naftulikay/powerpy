@@ -1,5 +1,9 @@
 ---
  - hosts: all
    tasks:
-       - name: echo
-         command: echo true
+       - name: install pip
+         yum: name=python-pip state=present
+       - name: install docker
+         yum: name=docker state=present
+       - name: install docker-compose
+         pip: name=docker-compose state=present
