@@ -1,0 +1,5 @@
+---
+ - hosts: all
+   tasks:
+       - name: echo
+         command: echo true
