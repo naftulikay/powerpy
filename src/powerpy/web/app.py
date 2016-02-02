@@ -16,7 +16,7 @@ class SlideshowApplication(tornado.web.Application):
         """
         handlers = (
             (r'/api/v1/slideshow/upload', SlideshowUploadHandler),
-            (r'/api/v1/slideshow/(?P<slideshow_id>[a-f0-9]{40})\.json', SlideshowIndexHandler),
+            (r'/api/v1/slideshow/(?P<slideshow_id>[a-f0-9]{64})\.json', SlideshowIndexHandler),
         )
 
         tornado.web.Application.__init__(self, handlers)

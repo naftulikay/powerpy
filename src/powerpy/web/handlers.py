@@ -17,6 +17,7 @@ import tempfile
 import tornado.web
 import uuid
 
+
 class SlideshowUploadHandler(tornado.web.RequestHandler):
 
     ACCEPTED_TYPES = (
@@ -88,7 +89,16 @@ class SlideshowUploadHandler(tornado.web.RequestHandler):
             # publish to celery
             process_slideshow_upload.delay(upload_id)
 
-            # TODO return JSON result
+            # return JSON result
+            result = {
+                'id': upload_id,
+                'status': 'PENDING',
+                'current': 0,
+                'created': created_timestamp,
+                'slides': [],
+            }
+
+            self.write(result)
         except Exception as e:
             # always clean up
             shutil.rmtree(workdir)
@@ -96,4 +106,30 @@ class SlideshowUploadHandler(tornado.web.RequestHandler):
 
 
 class SlideshowIndexHandler(tornado.web.RequestHandler):
-    pass
+
+    def get(self, slideshow_id):
+        """
+        """
+        if not slideshow_id:
+            raise HTTPError(status_code=404, log_message="Unable to find slideshow with empty id.")
+
+        redis_key = 'powerpy/slideshow/%s' % (slideshow_id,)
+        redis_slides_key = 'powerpy/slideshow/%s/slides' % (slideshow_id,)
+
+        if redis.exists(redis_key):
+            # great, we have something to return
+            slideshow = redis.hgetall(redis_key)
+            # slides can be null, that's okay
+            slides = redis.lrange(redis_slides_key, 0, 999) if redis.exists(redis_slides_key) else []
+
+            result = {
+                'id': slideshow.get('id'),
+                'status': slideshow.get('status'),
+                'current': slideshow.get('current', 0),
+                'created': slideshow.get('created'),
+                'slides': slides
+            }
+
+            self.write(result)
+        else:
+            raise HTTPError(status_code=404, log_message="Unable to find slideshow with id of %s" % (slideshow_id,))

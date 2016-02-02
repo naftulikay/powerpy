@@ -62,9 +62,14 @@ def process_slideshow_upload(upload_id):
 
         # upload slides to s3
         redis.hset(redis_key, 'status', 'UPLOADING')
+        slides = sorted([os.path.join(workdir, i) for i in os.listdir(workdir) if SLIDE_REGEX.search(i)])
         slide_urls = []
 
-        for slide in sorted([i for i in os.listdir(workdir) if SLIDE_REGEX.search(i)]):
+        if len(slides) == 0:
+            # if no slides, this is wrong
+            raise Exception("No slides found in upload, terminating.")
+
+        for slide in slides:
             # find all slides in the work directory in sorted order
             slide_urls.append(upload_to_s3(os.path.join(workdir, slide), '%s/%s' % (upload_id, slide)))
 
@@ -79,11 +84,15 @@ def process_slideshow_upload(upload_id):
         if workdir.startswith('/tmp/powerpy'):
             shutil.rmtree(workdir)
 
-        # remove unnecessary keys
-        redis.hdel(redis_key, 'workdir', 'file', 'mimetype')
-
-        # update redis with ready status
-        redis.hset(redis_key, 'status', 'READY')
+        # update redis
+        pipe = redis.pipeline()
+        # delete useless keys
+        pipe.hdel(redis_key, 'workdir', 'file', 'mimetype')
+        # set current slide
+        pipe.hset(redis_key, 'current', 0)
+        # set status to ready
+        pipe.hset(redis_key, 'status', 'READY')
+        pipe.execute()
     except Exception as e:
         # clean up redis
         redis.hset(redis_key, 'status', 'ERROR')
