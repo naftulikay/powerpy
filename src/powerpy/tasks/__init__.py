@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
+from datetime import timedelta
 from powerpy import redis
 from powerpy.worker import app
 
@@ -41,14 +42,15 @@ def upload_to_s3(file_path, upload_path):
 @app.task
 def process_slideshow_upload(upload_id):
     redis_key = 'powerpy/slideshow/%s' % (upload_id,)
+    redis_slides_key = 'powerpy/slideshow/%s/slides' % (upload_id,)
     workdir = redis.hget(redis_key, 'workdir')
     slideshow_filename = redis.hget(redis_key, 'file')
     mimetype = redis.hget(redis_key, 'mimetype')
 
-    # update redis with processing status
-    redis.hset(redis_key, 'status', 'PROCESSING')
-
     try:
+        # update redis with processing status
+        redis.hset(redis_key, 'status', 'PROCESSING')
+
         if mimetype.strip() != 'application/pdf':
             # convert from powerpoint format to pdf
             original = slideshow_filename
@@ -59,6 +61,7 @@ def process_slideshow_upload(upload_id):
         execute_process(['/usr/bin/convert', slideshow_filename, os.path.join(workdir, 'slide_%03d.jpg')])
 
         # upload slides to s3
+        redis.hset(redis_key, 'status', 'UPLOADING')
         slide_urls = []
 
         for slide in sorted([i for i in os.listdir(workdir) if SLIDE_REGEX.search(i)]):
@@ -66,11 +69,18 @@ def process_slideshow_upload(upload_id):
             slide_urls.append(upload_to_s3(os.path.join(workdir, slide), '%s/%s' % (upload_id, slide)))
 
         # save urls to slides in redis
-        redis.lpush('powerpy/slideshow/%s/slides' % (upload_id,), *slide_urls)
+        pipe = redis.pipeline()
+        pipe.lpush(redis_slides_key, *slide_urls)
+        # expire slides in 24 hours
+        pipe.expire(redis_slides_key, int(timedelta(hours=24).total_seconds()))
+        pipe.execute()
 
         # cleanup filesystem
         if workdir.startswith('/tmp/powerpy'):
             shutil.rmtree(workdir)
+
+        # remove unnecessary keys
+        redis.hdel(redis_key, 'workdir', 'file', 'mimetype')
 
         # update redis with ready status
         redis.hset(redis_key, 'status', 'READY')

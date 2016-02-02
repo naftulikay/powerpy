@@ -73,12 +73,15 @@ class SlideshowUploadHandler(tornado.web.RequestHandler):
             # save it to redis
             redis_key = 'powerpy/slideshow/%s' % (upload_id,)
             pipe = redis.pipeline()
-            pipe.hset(redis_key, 'id', upload_id)
-            pipe.hset(redis_key, 'status', 'PENDING')
-            pipe.hset(redis_key, 'created', created_timestamp)
-            pipe.hset(redis_key, 'workdir', workdir)
-            pipe.hset(redis_key, 'file', slideshow_filename)
-            pipe.hset(redis_key, 'mimetype', mimetype)
+            pipe.hmset(redis_key, {
+                'id': upload_id,
+                'status': 'PENDING',
+                'created': created_timestamp,
+                'workdir': workdir,
+                'file': slideshow_filename,
+                'mimetype': mimetype
+            })
+            # this expires in 24 hours
             pipe.expire(redis_key, int(timedelta(hours=24).total_seconds()))
             pipe.execute()
 
