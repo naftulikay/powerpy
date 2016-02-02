@@ -71,11 +71,11 @@ def process_slideshow_upload(upload_id):
 
         for slide in slides:
             # find all slides in the work directory in sorted order
-            slide_urls.append(upload_to_s3(os.path.join(workdir, slide), '%s/%s' % (upload_id, slide)))
+            slide_urls.append(upload_to_s3(slide, '%s/%s' % (upload_id, os.path.basename(slide))))
 
         # save urls to slides in redis
         pipe = redis.pipeline()
-        pipe.lpush(redis_slides_key, *slide_urls)
+        pipe.lpush(redis_slides_key, *reversed(slide_urls)) # redis adds things backwards
         # expire slides in 24 hours
         pipe.expire(redis_slides_key, int(timedelta(hours=24).total_seconds()))
         pipe.execute()

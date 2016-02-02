@@ -4,6 +4,7 @@
 from powerpy.web.handlers import (
     SlideshowUploadHandler,
     SlideshowIndexHandler,
+    SlideshowControlHandler,
 )
 
 import tornado.web
@@ -15,8 +16,13 @@ class SlideshowApplication(tornado.web.Application):
         """
         """
         handlers = (
+            # upload
             (r'/api/v1/slideshow/upload', SlideshowUploadHandler),
+            # static get
             (r'/api/v1/slideshow/(?P<slideshow_id>[a-f0-9]{64})\.json', SlideshowIndexHandler),
+            # control
+            (r'/api/v1/slideshow/(?P<slideshow_id>[a-f0-9]{64})/control', SlideshowControlHandler),
+            # websocket watch
         )
 
         tornado.web.Application.__init__(self, handlers)

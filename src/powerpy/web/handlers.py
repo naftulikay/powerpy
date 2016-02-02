@@ -9,6 +9,7 @@ from random import SystemRandom; random = SystemRandom()
 from tornado.options import options
 from tornado.web import HTTPError
 
+import json
 import magic
 import os, os.path
 import shutil
@@ -69,7 +70,7 @@ class SlideshowUploadHandler(tornado.web.RequestHandler):
                 str(uuid.uuid4()) + ''.join([random.choice(string.letters + string.digits) for i in range(32)])
             ).hexdigest()
 
-            created_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            created_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S -0000')
 
             # save it to redis
             redis_key = 'powerpy/slideshow/%s' % (upload_id,)
@@ -130,6 +131,50 @@ class SlideshowIndexHandler(tornado.web.RequestHandler):
                 'slides': slides
             }
 
+            self.write(result)
+        else:
+            raise HTTPError(status_code=404, log_message="Unable to find slideshow with id of %s" % (slideshow_id,))
+
+
+class SlideshowControlHandler(tornado.web.RequestHandler):
+
+    def post(self, slideshow_id):
+        """
+        """
+        if not slideshow_id:
+            raise HTTPError(status_code=404, log_message="Unable to find slideshow with empty id.")
+
+        redis_key = 'powerpy/slideshow/%s' % (slideshow_id,)
+        redis_slides_key = 'powerpy/slideshow/%s/slides' % (slideshow_id,)
+        redis_publish_channel = 'powerpy/slideshow/%s/updates' % (slideshow_id,)
+
+        if redis.exists(redis_key):
+            # get the slide length
+            slides_count = redis.llen(redis_slides_key)
+
+            control_request = json.loads(self.request.body)
+
+            # sanitize and prepare
+            result = {
+                'current': int(control_request.get('current', 0)),
+                'updated': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S -0000'),
+            }
+
+            # validate that current is within the allowed slides count
+            if not result.get('current') < slides_count:
+                raise HTTPError(status_code=400,
+                    log_message="Unable to set current slide to %d, slide count is %d for %s." % (
+                        result.get('current'), slides_count, slideshow_id))
+
+            # okay, so set the value in the redis dict and broadcast the event
+            pipe = redis.pipeline()
+            # update the current value in the dict
+            pipe.hset(redis_key, 'current', result.get('current'))
+            # publish a json object across the channel with the current index and the current time
+            pipe.publish(redis_publish_channel, json.dumps(result))
+            pipe.execute()
+
+            # send back the result that we broadcast
             self.write(result)
         else:
             raise HTTPError(status_code=404, log_message="Unable to find slideshow with id of %s" % (slideshow_id,))
