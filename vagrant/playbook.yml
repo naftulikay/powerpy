@@ -1,6 +1,14 @@
 ---
  - hosts: all
    tasks:
+       - name: install python dev packages
+         yum: name={{ item }} state=present
+         with_items:
+             - python-devel
+             - gcc
+             - gcc-c++
+             - make
+             - openssl-devel
        - name: install pip
          yum: name=python-pip state=present
        - name: install docker
@@ -13,3 +21,8 @@
          yum: name=redis state=present
        - name: stop and disable redis
          service: name=redis state=stopped enabled=no
+       - name: install conversion tools
+         yum: name={{ item }} state=present
+         with_items:
+             - ImageMagick
+             - unoconv
