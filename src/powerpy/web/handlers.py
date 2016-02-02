@@ -16,6 +16,9 @@ import shutil
 import string
 import tempfile
 import tornado.web
+import tornado.websocket
+import tornadoredis
+import tornadoredis.pubsub
 import uuid
 
 
@@ -178,3 +181,39 @@ class SlideshowControlHandler(tornado.web.RequestHandler):
             self.write(result)
         else:
             raise HTTPError(status_code=404, log_message="Unable to find slideshow with id of %s" % (slideshow_id,))
+
+
+class SlideshowListenHandler(tornado.websocket.WebSocketHandler):
+
+    def __init__(self, *args, **kwargs):
+        super(SlideshowListenHandler, self).__init__(*args, **kwargs)
+        self.client = tornadoredis.Client()
+        self.redis_channel = None
+
+    def open(self, slideshow_id):
+        """
+        Fired when someone connects.
+        """
+        if not redis.exists('powerpy/slideshow/%s' % (slideshow_id,)):
+            raise HTTPError(status_code=404, log_message="Unable to find slideshow with id of %s" % (slideshow_id,))
+
+        self.client.connect()
+        self.redis_channel = 'powerpy/slideshow/%s/updates' % (slideshow_id,)
+        self.client.subscribe(self.redis_channel, callback=self.on_redis_message)
+        self.client.listen()
+
+    def on_redis_message(self, *args, **kwargs):
+        print("on redis message: %s, %s" % (str(args), str(kwargs)))
+        if type(args[0]) != bool:
+            self.write_message(args[0])
+
+    def on_message(self, msg):
+        print("on_message: %s" % (msg,))
+
+    def on_close(self):
+        """
+        Fired when someone closes.
+        """
+        if self.client.subscribed:
+            self.client.unsubscribe(self.redis_channel)
+            self.client.disconnect()
