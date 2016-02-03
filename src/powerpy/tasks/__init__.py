@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import timedelta
-from powerpy import redis
+from powerpy import redis, config
 from powerpy.worker import app
 
 import boto3
@@ -23,6 +23,8 @@ class ProgramException(Exception):
 
 
 def execute_process(args):
+    """
+    """
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = p.communicate()
     returncode = p.returncode
@@ -32,11 +34,18 @@ def execute_process(args):
 
 
 def upload_to_s3(file_path, upload_path):
-    print("upload %s to %s on s3" % (file_path, upload_path))
-    return "https://nope.com/s3/%s" % (upload_path,)
-    # s3 = boto3.resource('s3')
-    # s3.meta.client.upload_file(file_path, os.environ.get('S3_BUCKET'), upload_path)
-    # o = s3.meta.client.get_object(Bucket=os.environ.get('S3_BUCKET'), Key=upload_path)
+    """
+    """
+    s3 = boto3.resource('s3')
+    o = s3.Object(config.s3_bucket, upload_path)
+    # do the upload
+    o.upload_file(file_path)
+
+    # get the link
+    return "https://s3.amazonaws.com/{bucket}/{key}".format(**{
+        'bucket': config.s3_bucket,
+        'key': upload_path,
+    })
 
 
 @app.task

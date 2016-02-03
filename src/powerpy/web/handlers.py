@@ -3,7 +3,7 @@
 
 from datetime import datetime, timedelta
 from hashlib import sha256
-from powerpy import redis
+from powerpy import redis, config
 from powerpy.tasks import process_slideshow_upload
 from random import SystemRandom; random = SystemRandom()
 from tornado.options import options
@@ -231,6 +231,6 @@ class SlideshowListenHandler(tornado.websocket.WebSocketHandler):
         """
         Establish an asynchronous Redis connection.
         """
-        client = tornadoredis.Client()
+        client = tornadoredis.Client(host=config.redis_host, port=config.redis_port)
         client.connect()
         return client
