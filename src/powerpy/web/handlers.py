@@ -10,6 +10,7 @@ from tornado.options import options
 from tornado.web import HTTPError
 
 import json
+import logging
 import magic
 import os, os.path
 import shutil
@@ -185,11 +186,7 @@ class SlideshowControlHandler(tornado.web.RequestHandler):
 
 class SlideshowListenHandler(tornado.websocket.WebSocketHandler):
 
-    def __init__(self, *args, **kwargs):
-        super(SlideshowListenHandler, self).__init__(*args, **kwargs)
-        self.client = tornadoredis.Client()
-        self.redis_channel = None
-
+    @tornado.gen.engine
     def open(self, slideshow_id):
         """
         Fired when someone connects.
@@ -197,18 +194,30 @@ class SlideshowListenHandler(tornado.websocket.WebSocketHandler):
         if not redis.exists('powerpy/slideshow/%s' % (slideshow_id,)):
             raise HTTPError(status_code=404, log_message="Unable to find slideshow with id of %s" % (slideshow_id,))
 
-        self.client.connect()
-        self.redis_channel = 'powerpy/slideshow/%s/updates' % (slideshow_id,)
-        self.client.subscribe(self.redis_channel, callback=self.on_redis_message)
-        self.client.listen()
+        logging.info("client connected to slideshow %s", slideshow_id)
 
-    def on_redis_message(self, *args, **kwargs):
-        print("on redis message: %s, %s" % (str(args), str(kwargs)))
-        if type(args[0]) != bool:
-            self.write_message(args[0])
+        self.client = self.get_redis_client()
+        self.redis_channel = 'powerpy/slideshow/%s/updates' % (slideshow_id,)
+        yield tornado.gen.Task(self.client.subscribe, self.redis_channel)
+        self.client.listen(self.on_redis_message)
+
+    def on_redis_message(self, message):
+        """
+        Fired whenever a message is published to the Redis channel.
+        """
+        if message.kind == 'message':
+            # we've received a message from redis
+            try:
+                payload = json.loads(message.body)
+                self.write_message(payload)
+            except ValueError as e:
+                logging.error("failed to convert the message body to JSON: %s", e.message)
 
     def on_message(self, msg):
-        print("on_message: %s" % (msg,))
+        """
+        Fired when a message is received from a client. We don't like that.
+        """
+        self.close()
 
     def on_close(self):
         """
@@ -217,3 +226,11 @@ class SlideshowListenHandler(tornado.websocket.WebSocketHandler):
         if self.client.subscribed:
             self.client.unsubscribe(self.redis_channel)
             self.client.disconnect()
+
+    def get_redis_client(self):
+        """
+        Establish an asynchronous Redis connection.
+        """
+        client = tornadoredis.Client()
+        client.connect()
+        return client
