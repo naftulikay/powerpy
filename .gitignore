@@ -1,4 +1,5 @@
 .vagrant
+.aws-credentials
 
 # python/buildout
 eggs
