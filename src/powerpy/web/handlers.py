@@ -101,6 +101,9 @@ class SlideshowUploadHandler(tornado.web.RequestHandler):
                 'current': 0,
                 'created': created_timestamp,
                 'slides': [],
+                '_links': {
+                    'self': { 'href': '/api/v1/slideshow/{slideshow_id}.json'.format(slideshow_id=upload_id) }
+                }
             }
 
             self.write(result)
@@ -132,7 +135,11 @@ class SlideshowIndexHandler(tornado.web.RequestHandler):
                 'status': slideshow.get('status'),
                 'current': slideshow.get('current', 0),
                 'created': slideshow.get('created'),
-                'slides': slides
+                'slides': slides,
+                '_links': {
+                    'self': { 'href': '/api/v1/slideshow/{slideshow_id}.json'.format(slideshow_id=slideshow_id) },
+                    'websocket': { 'href': '/api/v1/slideshow/{slideshow_id}/updates'.format(slideshow_id=slideshow_id) }
+                }
             }
 
             self.write(result)
@@ -160,6 +167,7 @@ class SlideshowControlHandler(tornado.web.RequestHandler):
 
             # sanitize and prepare
             result = {
+                'id': slideshow_id,
                 'current': int(control_request.get('current', 0)),
                 'updated': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S -0000'),
             }
