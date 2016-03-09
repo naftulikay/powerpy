@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from hashlib import sha256
 from powerpy import redis, config
 from powerpy.tasks import process_slideshow_upload
+from powerpy.util import base36
 from random import SystemRandom; random = SystemRandom()
 from tornado.options import options
 from tornado.web import HTTPError
@@ -68,11 +69,8 @@ class SlideshowUploadHandler(tornado.web.RequestHandler):
                     (mimetype, SlideshowUploadHandler.ACCEPTED_TYPES))
 
             # if it has made it this far, it just might be a winner
-            # generate a random 'unique' id for the upload
-            upload_id = sha256(
-                # a random uuid plus 256 bits of randomness from system random
-                str(uuid.uuid4()) + ''.join([random.choice(string.letters + string.digits) for i in range(32)])
-            ).hexdigest()
+            # generate a random 'unique' id for the upload using base36 and redis
+            upload_id = base36.encode(redis.incr('power/slideshow/index'))
 
             created_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S -0000')
 

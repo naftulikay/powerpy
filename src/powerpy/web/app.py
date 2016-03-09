@@ -20,11 +20,11 @@ class SlideshowApplication(tornado.web.Application):
             # upload
             (r'/api/v1/slideshow/upload', SlideshowUploadHandler),
             # static get
-            (r'/api/v1/slideshow/(?P<slideshow_id>[a-f0-9]{64})\.json', SlideshowIndexHandler),
+            (r'/api/v1/slideshow/(?P<slideshow_id>[a-z0-9]+)\.json', SlideshowIndexHandler),
             # control
-            (r'/api/v1/slideshow/(?P<slideshow_id>[a-f0-9]{64})/control', SlideshowControlHandler),
+            (r'/api/v1/slideshow/(?P<slideshow_id>[a-z0-9]+)/control', SlideshowControlHandler),
             # websocket watch
-            (r'/api/v1/slideshow/(?P<slideshow_id>[a-f0-9]{64})/(?:listen|updates)', SlideshowListenHandler),
+            (r'/api/v1/slideshow/(?P<slideshow_id>[a-z0-9]+)/(?:listen|updates)', SlideshowListenHandler),
         )
 
         tornado.web.Application.__init__(self, handlers)
