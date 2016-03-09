@@ -25,47 +25,56 @@ your RabbitMQ instance, and your AWS account credentials and S3 bucket informati
     </thead>
     <tbody>
         <tr>
-            <td>AWS_ACCESS_KEY_ID</td>
+            <td><code>AWS_ACCESS_KEY_ID</code></td>
             <td>Celery Worker</td>
             <td>Your AWS access key ID for Amazon authentication.
         </tr>
         <tr>
-            <td>AWS_SECRET_ACCESS_KEY</td>
+            <td><code>AWS_SECRET_ACCESS_KEY</code></td>
             <td>Celery Worker</td>
             <td>Your AWS secret access key for Amazon authentication.</td>
         </tr>
         <tr>
-            <td>S3_BUCKET</td>
+            <td><code>S3_BUCKET</code></td>
             <td>Celery Worker</td>
             <td>The S3 bucket name to upload files into.</td>
         </tr>
         <tr>
-            <td>MAX_UPLOAD_SIZE</td>
+            <td><code>MAX_UPLOAD_SIZE</code></td>
             <td>Web Server</td>
             <td>The maximum upload size in kilobytes. Defaults to 10240 (10MiB).</td>
         </tr>
         <tr>
-            <td>HTTP_PORT</td>
+            <td><code>MAX_SLIDESHOW_AGE</code></td>
+            <td>Web Server</td>
+            <td>
+                <p>The duration, in <a href="https://en.wikipedia.org/wiki/ISO_8601#Durations">ISO 8601 format</a>, of how long a slideshow should remain stored in Redis.</p>
+                <p>Defaults to <code>PT24H</code>, which is a period of time of 24 hours.</p>
+                <p>To set it to, for example, 30 days, use <code>P30DT</code> for a period of 30 days of time.</p>
+            </td>
+        </tr>
+        <tr>
+            <td><code>HTTP_PORT</code></td>
             <td>Web Server</td>
             <td>The HTTP port to listen on for traffic. Defaults to 8080.</td>
         </td>
         <tr>
-            <td>REDIS_HOST</td>
+            <td><code>REDIS_HOST</code></td>
             <td>Both</td>
             <td>The hostname of the Redis server. Defaults to localhost.</td>
         </tr>
         <tr>
-            <td>REDIS_PORT</td>
+            <td><code>REDIS_PORT</code></td>
             <td>Both</td>
             <td>The port number of the Redis server. Defaults to 6379.</td>
         </tr>
         <tr>
-            <td>RABBITMQ_HOST</td>
+            <td><code>RABBITMQ_HOST</code></td>
             <td>Both</td>
             <td>The hostname of the RabbitMQ server. Defaults to localhost.</td>
         </tr>
         <tr>
-            <td>RABBITMQ_PORT</td>
+            <td><code>RABBITMQ_PORT</code></td>
             <td>Both</td>
             <td>The port number of the RabbitMQ server. Defaults to 5672.</td>
         </tr>

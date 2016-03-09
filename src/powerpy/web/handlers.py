@@ -73,6 +73,7 @@ class SlideshowUploadHandler(tornado.web.RequestHandler):
             upload_id = base36.encode(redis.incr('power/slideshow/index'))
 
             created_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S -0000')
+            expires_timestamp = (datetime.utcnow() + timedelta(seconds=config.max_slideshow_age)).strftime('%Y-%m-%d %H:%M:%S -0000')
 
             # save it to redis
             redis_key = 'powerpy/slideshow/%s' % (upload_id,)
@@ -81,12 +82,13 @@ class SlideshowUploadHandler(tornado.web.RequestHandler):
                 'id': upload_id,
                 'status': 'PENDING',
                 'created': created_timestamp,
+                'expires': expires_timestamp,
                 'workdir': workdir,
                 'file': slideshow_filename,
                 'mimetype': mimetype
             })
-            # this expires in 24 hours
-            pipe.expire(redis_key, int(timedelta(hours=24).total_seconds()))
+            # this expires according to MAX_SLIDESHOW_AGE
+            pipe.expire(redis_key, config.max_slideshow_age)
             pipe.execute()
 
             # publish to celery
@@ -98,6 +100,7 @@ class SlideshowUploadHandler(tornado.web.RequestHandler):
                 'status': 'PENDING',
                 'current': 0,
                 'created': created_timestamp,
+                'expires': expires_timestamp,
                 'slides': [],
                 '_links': {
                     'self': { 'href': '/api/v1/slideshow/{slideshow_id}.json'.format(slideshow_id=upload_id) }
@@ -133,6 +136,7 @@ class SlideshowIndexHandler(tornado.web.RequestHandler):
                 'status': slideshow.get('status'),
                 'current': slideshow.get('current', 0),
                 'created': slideshow.get('created'),
+                'expires': slideshow.get('expires'),
                 'slides': slides,
                 '_links': {
                     'self': { 'href': '/api/v1/slideshow/{slideshow_id}.json'.format(slideshow_id=slideshow_id) },

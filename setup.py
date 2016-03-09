@@ -18,6 +18,7 @@ setup(
         'python-magic >= 0.4.0,<0.5.0',
         'celery == 3.1.20',
         'boto3 == 1.2.3',
+        'isodate == 0.5.4',
     ],
     entry_points = {
         'console_scripts': [

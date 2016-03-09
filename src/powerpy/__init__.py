@@ -3,6 +3,7 @@
 
 from redis import StrictRedis
 
+import isodate
 import os
 
 class Configuration(object):
@@ -17,6 +18,8 @@ class Configuration(object):
         self.rabbitmq_host = os.environ.get('RABBITMQ_HOST', 'localhost')
         self.rabbitmq_port = int(os.environ.get('RABBITMQ_PORT', 5672))
         self.max_upload_size = int(os.environ.get('MAX_UPLOAD_SIZE', 1024 * 10)) # 10MiB
+        # slideshows live in redis for 24 hours by default
+        self.max_slideshow_age = int(isodate.parse_duration(os.environ.get('MAX_SLIDESHOW_AGE', 'PT24H')).total_seconds())
 
 config = Configuration()
 
